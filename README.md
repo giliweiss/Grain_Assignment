@@ -53,3 +53,12 @@ The browser never receives these tokens. API routes return a clear not-configure
 4. Deploy. If you add or change those variables later, redeploy so the new values are used.
 
 The current deployment is [https://grain-assignment.vercel.app/](https://grain-assignment.vercel.app/).
+
+## What I’d Build Next
+
+With another week, I would focus on making the tool more collaborative and easier to keep up to date:
+
+- Move the data from localStorage to a shared database so the whole sales team can work with the same contacts and meeting history.
+- Deepen the HubSpot integration so conference interactions and notes are saved there, not only the contact.
+- Add a smarter way to discover and add new conferences, for example by importing from public sources or using AI-assisted conference discovery instead of updating the conference file manually.
+- Improve contact matching with more identifiers and better handling of name variations, while still keeping human confirmation for ambiguous cases.
