@@ -1,0 +1,42 @@
+# Grain Conference Intelligence
+
+A four-screen tool for a Grain salesperson: discover and prioritize conferences, plan the year, capture a lead on the floor, recognize repeat contacts, and act with one AI relationship summary plus a HubSpot send.
+
+## Setup
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+Run tests with:
+
+```bash
+npm test
+```
+
+Conference data lives in `data/conferences.json`. Edit that file to add or update events.
+
+## Screens
+
+1. **Conferences** — filter and prioritize events by fit.
+2. **Year Plan** — months, thin months, and trip clusters.
+3. **On the Floor** — fast lead capture at an event.
+4. **People** — meeting history, match confirmation, relationship summary, and HubSpot send.
+
+## Integration credentials
+
+Set these yourself. There is no Settings screen. Keys must not be hardcoded or put in frontend code.
+
+| Variable | Purpose |
+| --- | --- |
+| `OPENAI_API_KEY` | Relationship summary (server-only) |
+| `OPENAI_MODEL` | OpenAI model name (optional; defaults in the route) |
+| `HUBSPOT_ACCESS_TOKEN` | Create-contact send (server-only) |
+
+- **Local:** copy `.env.example` to `.env.local` and fill in the values.
+- **Deployed:** set the same names in Vercel project environment variables.
+
+The browser never receives these tokens. API routes return a clear not-configured or not-sent response when a key or email is missing.
