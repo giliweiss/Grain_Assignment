@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { getConferences } from "@/lib/conferences";
 import { addMeeting } from "@/lib/storage";
 import type { Interest, Meeting } from "@/lib/types";
@@ -38,9 +38,12 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
   const [note, setNote] = useState("");
   const [interest, setInterest] = useState<Interest>("interested");
   const [savedMessage, setSavedMessage] = useState("");
+  const [formError, setFormError] = useState("");
+  const saveLocked = useRef(false);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saveLocked.current) return;
 
     const trimmedName = personName.trim();
     const trimmedCompany = company.trim();
@@ -49,8 +52,12 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
     const trimmedLinkedinUrl = linkedinUrl.trim();
 
     if (!conferenceId || !trimmedName || !trimmedCompany) {
+      setSavedMessage("");
+      setFormError("Enter a name, company, and conference.");
       return;
     }
+
+    saveLocked.current = true;
 
     const meeting: Meeting = {
       id: createMeetingId(),
@@ -69,7 +76,13 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
       meeting.linkedinUrl = trimmedLinkedinUrl;
     }
 
-    addMeeting(meeting);
+    const saved = addMeeting(meeting);
+    if (!saved) {
+      saveLocked.current = false;
+      setSavedMessage("");
+      setFormError("Could not save this meeting.");
+      return;
+    }
 
     setPersonName("");
     setCompany("");
@@ -77,13 +90,19 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
     setLinkedinUrl("");
     setNote("");
     setInterest("interested");
-    setSavedMessage("Saved. Ready for the next person.");
+    setFormError("");
+    setSavedMessage(`Saved ${trimmedName}. Ready for the next person.`);
+    window.setTimeout(() => {
+      saveLocked.current = false;
+    }, 400);
   }
 
   return (
     <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3.5">
       <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        Conference
+        <span>
+          Conference <span className="font-normal text-neutral-600">Required</span>
+        </span>
         <select
           required
           value={conferenceId}
@@ -102,11 +121,14 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
       </label>
 
       <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        Name
+        <span>
+          Name <span className="font-normal text-neutral-600">Required</span>
+        </span>
         <input
           required
           type="text"
           autoComplete="name"
+          maxLength={120}
           value={personName}
           onChange={(event) => setPersonName(event.target.value)}
           className={fieldClassName}
@@ -114,22 +136,32 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
       </label>
 
       <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        Company
+        <span>
+          Company <span className="font-normal text-neutral-600">Required</span>
+        </span>
         <input
           required
           type="text"
           autoComplete="organization"
+          maxLength={160}
           value={company}
           onChange={(event) => setCompany(event.target.value)}
           className={fieldClassName}
         />
       </label>
 
+      <p className="text-xs leading-snug text-neutral-600">
+        Email and a missing note can be added later on People.
+      </p>
+
       <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        Email
+        <span>
+          Email <span className="font-normal text-neutral-600">Optional</span>
+        </span>
         <input
           type="email"
           autoComplete="email"
+          maxLength={254}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           className={fieldClassName}
@@ -137,10 +169,14 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
       </label>
 
       <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        LinkedIn
+        <span>
+          LinkedIn{" "}
+          <span className="font-normal text-neutral-600">Optional</span>
+        </span>
         <input
           type="text"
           inputMode="url"
+          maxLength={300}
           value={linkedinUrl}
           onChange={(event) => setLinkedinUrl(event.target.value)}
           className={fieldClassName}
@@ -148,9 +184,12 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
       </label>
 
       <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        Note
+        <span>
+          Note <span className="font-normal text-neutral-600">Optional</span>
+        </span>
         <textarea
           rows={2}
+          maxLength={1000}
           value={note}
           onChange={(event) => setNote(event.target.value)}
           className={fieldClassName}
@@ -191,6 +230,12 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
       >
         Save meeting
       </button>
+
+      {formError ? (
+        <p className="text-center text-sm font-medium text-red-700" role="alert">
+          {formError}
+        </p>
+      ) : null}
 
       {savedMessage ? (
         <p

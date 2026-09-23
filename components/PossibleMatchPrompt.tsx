@@ -45,7 +45,7 @@ export function PossibleMatchPrompt({
                 </p>
                 <ul className="mt-1 space-y-0.5">
                   {possibleMatch.groups.map((group) => (
-                    <li key={group.key} className="text-xs text-neutral-700">
+                    <li key={group.key} className="break-words text-xs text-neutral-700">
                       {group.companies.join(", ")}
                       {" · "}
                       {group.conferenceNames.join(", ")}

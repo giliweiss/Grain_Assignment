@@ -7,34 +7,49 @@ type HubSpotRequestBody = {
   note?: string;
 };
 
+const emptyPayload = {
+  email: "",
+  firstName: "",
+  lastName: "",
+  company: "",
+  conferenceName: "",
+  note: "",
+};
+
+function notSent(reason: string, payload = emptyPayload) {
+  return Response.json({ sent: false, reason, payload });
+}
+
 export async function POST(request: Request) {
-  const body = (await request.json()) as HubSpotRequestBody;
+  let body: HubSpotRequestBody;
+  try {
+    body = (await request.json()) as HubSpotRequestBody;
+  } catch {
+    return notSent("Invalid request JSON.");
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return notSent("Invalid request JSON.");
+  }
+
   const payload = {
-    email: body.email ?? "",
-    firstName: body.firstName ?? "",
-    lastName: body.lastName ?? "",
-    company: body.company ?? "",
-    conferenceName: body.conferenceName ?? "",
-    note: body.note ?? "",
+    email: typeof body.email === "string" ? body.email : "",
+    firstName: typeof body.firstName === "string" ? body.firstName : "",
+    lastName: typeof body.lastName === "string" ? body.lastName : "",
+    company: typeof body.company === "string" ? body.company : "",
+    conferenceName: typeof body.conferenceName === "string" ? body.conferenceName : "",
+    note: typeof body.note === "string" ? body.note : "",
   };
 
   const email = payload.email.trim();
-  const accessToken = process.env.HUBSPOT_ACCESS_TOKEN;
+  const accessToken = process.env.HUBSPOT_ACCESS_TOKEN?.trim();
 
   if (!email) {
-    return Response.json({
-      sent: false,
-      reason: "Email is required to create a HubSpot contact.",
-      payload,
-    });
+    return notSent("Email is required to create a HubSpot contact.", payload);
   }
 
   if (!accessToken) {
-    return Response.json({
-      sent: false,
-      reason: "HUBSPOT_ACCESS_TOKEN is not configured.",
-      payload,
-    });
+    return notSent("HUBSPOT_ACCESS_TOKEN is not configured.", payload);
   }
 
   try {
@@ -58,27 +73,15 @@ export async function POST(request: Request) {
     );
 
     if (hubSpotResponse.status === 409) {
-      return Response.json({
-        sent: false,
-        reason: "This email is already a HubSpot contact.",
-        payload,
-      });
+      return notSent("This email is already a HubSpot contact.", payload);
     }
 
     if (!hubSpotResponse.ok) {
-      return Response.json({
-        sent: false,
-        reason: "HubSpot could not create this contact.",
-        payload,
-      });
+      return notSent("HubSpot could not create this contact.", payload);
     }
 
     return Response.json({ sent: true, payload });
   } catch {
-    return Response.json({
-      sent: false,
-      reason: "HubSpot could not be reached.",
-      payload,
-    });
+    return notSent("HubSpot could not be reached.", payload);
   }
 }

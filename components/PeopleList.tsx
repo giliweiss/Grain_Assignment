@@ -14,6 +14,7 @@ type PeopleListProps = {
 };
 
 function formatCapturedDate(capturedAt: string): string {
+  if (typeof capturedAt !== "string" || !capturedAt) return "Date unknown";
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(capturedAt);
   const date = dateOnly
     ? new Date(
@@ -22,6 +23,7 @@ function formatCapturedDate(capturedAt: string): string {
         Number(dateOnly[3]),
       )
     : new Date(capturedAt);
+  if (Number.isNaN(date.getTime())) return "Date unknown";
 
   return date.toLocaleDateString("en-GB", {
     day: "numeric",
@@ -83,14 +85,30 @@ function uniqueLinkedinUrls(personGroup: PersonGroup): string[] {
 }
 
 function hasNote(note: string): boolean {
-  return note.trim().length > 0;
+  return typeof note === "string" && note.trim().length > 0;
+}
+
+function latestMeeting(personGroup: PersonGroup): PersonGroup["meetings"][number] | undefined {
+  return [...personGroup.meetings].sort((first, second) =>
+    first.capturedAt < second.capturedAt ? 1 : -1,
+  )[0];
 }
 
 function currentCompany(personGroup: PersonGroup): string {
-  const latestMeeting = [...personGroup.meetings].sort((first, second) =>
-    first.capturedAt < second.capturedAt ? 1 : -1,
-  )[0];
-  return latestMeeting?.company ?? "";
+  return latestMeeting(personGroup)?.company ?? "";
+}
+
+function uniqueNames(personGroup: PersonGroup): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const meeting of personGroup.meetings) {
+    const name = meeting.personName.trim();
+    const key = normalizeText(name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    names.push(name);
+  }
+  return names;
 }
 
 function companyDiffers(meetingCompany: string, headerCompany: string): boolean {
@@ -129,7 +147,7 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
     const updatedMeetings = meetings.map((meeting) =>
       meeting.id === meetingId ? { ...meeting, note: trimmedNote } : meeting,
     );
-    saveMeetings(updatedMeetings);
+    if (!saveMeetings(updatedMeetings)) return;
 
     setPeopleGroups((currentGroups) =>
       currentGroups.map((personGroup) => ({
@@ -158,7 +176,7 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
         ? { ...meeting, email: trimmedEmail }
         : meeting,
     );
-    saveMeetings(updatedMeetings);
+    if (!saveMeetings(updatedMeetings)) return;
 
     setPeopleGroups((currentGroups) =>
       currentGroups.map((group) =>
@@ -192,7 +210,8 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
       </h2>
       <ul className="mt-2 space-y-2">
         {peopleGroups.map((personGroup) => {
-          const personName = personGroup.meetings[0]?.personName ?? "Unknown";
+          const names = uniqueNames(personGroup);
+          const personName = latestMeeting(personGroup)?.personName ?? names[0] ?? "Unknown";
           const companies = uniqueCompanies(personGroup);
           const emails = uniqueEmails(personGroup);
           const linkedinUrls = uniqueLinkedinUrls(personGroup);
@@ -211,20 +230,20 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <h3 className="text-base font-semibold text-neutral-900">
-                      {personName}
+                    <h3 className="break-words text-base font-semibold text-neutral-900">
+                      {names.length > 0 ? names.join(" · ") : personName}
                     </h3>
                     <span className="text-xs text-neutral-600">
                       {meetingCount} {meetingCount === 1 ? "meeting" : "meetings"}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-sm font-medium text-neutral-700">
+                  <p className="mt-0.5 break-words text-sm font-medium text-neutral-700">
                     {companies.join(" · ")}
                   </p>
 
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-600">
                     {emails.length > 0 ? (
-                      <span>{emails.join(" · ")}</span>
+                      <span className="break-all">{emails.join(" · ")}</span>
                     ) : null}
                     {isEditingEmail ? (
                       <span className="flex flex-wrap items-center gap-1.5">
@@ -232,6 +251,7 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
                           type="email"
                           value={emailDraft}
                           onChange={(event) => setEmailDraft(event.target.value)}
+                          maxLength={254}
                           className="min-w-[10rem] rounded border border-neutral-300 px-2 py-1 text-sm text-neutral-900"
                           placeholder="Email"
                           aria-label="Email"
@@ -317,7 +337,7 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
                       </div>
 
                       {meetingHasNote ? (
-                        <p className="mt-0.5 text-xs leading-snug text-neutral-600">
+                        <p className="mt-0.5 break-words text-xs leading-snug text-neutral-600">
                           {meeting.note}
                         </p>
                       ) : isAddingNote ? (
@@ -328,6 +348,7 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
                             onChange={(event) =>
                               setNoteDraft(event.target.value)
                             }
+                            maxLength={1000}
                             className="min-w-[10rem] flex-1 rounded border border-neutral-300 px-2 py-1 text-sm text-neutral-900"
                             placeholder="Note"
                             aria-label="Meeting note"

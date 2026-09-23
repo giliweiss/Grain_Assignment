@@ -17,7 +17,11 @@ import {
 import type { GroupedMeetings, PersonGroup } from "@/lib/types";
 
 function loadGroupedMeetings(): GroupedMeetings {
-  return groupMeetings(getMeetings(), getConfirmations());
+  try {
+    return groupMeetings(getMeetings(), getConfirmations());
+  } catch {
+    return { people: [], possibleMatches: [] };
+  }
 }
 
 function confirmedSamePersonNames(): string[] {
@@ -58,8 +62,13 @@ export default function PeoplePage() {
   const [confirmedNames, setConfirmedNames] = useState<string[]>([]);
 
   function reload() {
-    setGrouped(loadGroupedMeetings());
-    setConfirmedNames(confirmedSamePersonNames());
+    try {
+      setGrouped(loadGroupedMeetings());
+      setConfirmedNames(confirmedSamePersonNames());
+    } catch {
+      setGrouped({ people: [], possibleMatches: [] });
+      setConfirmedNames([]);
+    }
   }
 
   useEffect(() => {

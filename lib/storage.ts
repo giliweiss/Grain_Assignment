@@ -12,20 +12,85 @@ function canUseLocalStorage(): boolean {
   return typeof window !== "undefined" && typeof localStorage !== "undefined";
 }
 
-function readJson<T>(key: string, fallback: T): T {
-  if (!canUseLocalStorage()) return fallback;
+function readJson(key: string): unknown {
+  if (!canUseLocalStorage()) return null;
   const raw = localStorage.getItem(key);
-  if (!raw) return fallback;
+  if (!raw) return null;
   try {
-    return JSON.parse(raw) as T;
+    return JSON.parse(raw) as unknown;
   } catch {
-    return fallback;
+    return null;
   }
 }
 
-function writeJson(key: string, value: unknown): void {
-  if (!canUseLocalStorage()) return;
-  localStorage.setItem(key, JSON.stringify(value));
+function writeJson(key: string, value: unknown): boolean {
+  if (!canUseLocalStorage()) return false;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeMeeting(value: unknown): Meeting | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (typeof record.id !== "string" || !record.id.trim()) return null;
+  if (typeof record.conferenceId !== "string" || !record.conferenceId.trim()) return null;
+  if (typeof record.personName !== "string" || !record.personName.trim()) return null;
+  if (typeof record.company !== "string" || !record.company.trim()) return null;
+
+  const meeting: Meeting = {
+    id: record.id.trim(),
+    conferenceId: record.conferenceId.trim(),
+    capturedAt: typeof record.capturedAt === "string" ? record.capturedAt : "",
+    personName: record.personName.trim(),
+    company: record.company.trim(),
+    note: typeof record.note === "string" ? record.note : "",
+    interest: record.interest === "interested" ? "interested" : "not_now",
+  };
+
+  if (typeof record.email === "string" && record.email.trim()) {
+    meeting.email = record.email.trim();
+  }
+  if (typeof record.linkedinUrl === "string" && record.linkedinUrl.trim()) {
+    meeting.linkedinUrl = record.linkedinUrl.trim();
+  }
+
+  return meeting;
+}
+
+function readMeetings(): Meeting[] {
+  const parsed = readJson(MEETINGS_KEY);
+  if (!Array.isArray(parsed)) return getSeedMeetings();
+
+  const seenIds = new Set<string>();
+  const meetings: Meeting[] = [];
+  for (const item of parsed) {
+    const meeting = sanitizeMeeting(item);
+    if (!meeting || seenIds.has(meeting.id)) continue;
+    seenIds.add(meeting.id);
+    meetings.push(meeting);
+  }
+  return meetings;
+}
+
+function readConfirmations(): Confirmation[] {
+  const parsed = readJson(CONFIRMATIONS_KEY);
+  if (!Array.isArray(parsed)) return [];
+
+  const confirmations = new Map<string, Confirmation>();
+  for (const item of parsed) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    if (typeof record.normalizedName !== "string") continue;
+    if (record.decision !== "same_person" && record.decision !== "different_people") continue;
+    const normalizedName = normalizeText(record.normalizedName);
+    if (!normalizedName) continue;
+    confirmations.set(normalizedName, { normalizedName, decision: record.decision });
+  }
+  return [...confirmations.values()];
 }
 
 function ensureSeeded(): void {
@@ -33,7 +98,11 @@ function ensureSeeded(): void {
   if (localStorage.getItem(SEEDED_KEY) === "true") return;
   writeJson(MEETINGS_KEY, seedMeetingList);
   writeJson(CONFIRMATIONS_KEY, []);
-  localStorage.setItem(SEEDED_KEY, "true");
+  try {
+    localStorage.setItem(SEEDED_KEY, "true");
+  } catch {
+    return;
+  }
 }
 
 export function getSeedMeetings(): Meeting[] {
@@ -43,25 +112,25 @@ export function getSeedMeetings(): Meeting[] {
 export function getMeetings(): Meeting[] {
   if (!canUseLocalStorage()) return getSeedMeetings();
   ensureSeeded();
-  return readJson<Meeting[]>(MEETINGS_KEY, getSeedMeetings());
+  return readMeetings();
 }
 
-export function saveMeetings(meetings: Meeting[]): void {
-  if (!canUseLocalStorage()) return;
+export function saveMeetings(meetings: Meeting[]): boolean {
+  if (!canUseLocalStorage()) return false;
   ensureSeeded();
-  writeJson(MEETINGS_KEY, meetings);
+  return writeJson(MEETINGS_KEY, meetings);
 }
 
-export function addMeeting(meeting: Meeting): void {
+export function addMeeting(meeting: Meeting): boolean {
   const meetings = getMeetings();
   meetings.push(meeting);
-  saveMeetings(meetings);
+  return saveMeetings(meetings);
 }
 
 export function getConfirmations(): Confirmation[] {
   if (!canUseLocalStorage()) return [];
   ensureSeeded();
-  return readJson<Confirmation[]>(CONFIRMATIONS_KEY, []);
+  return readConfirmations();
 }
 
 export function saveConfirmations(confirmations: Confirmation[]): void {
@@ -88,5 +157,9 @@ export function resetDemoData(): void {
   if (!canUseLocalStorage()) return;
   writeJson(MEETINGS_KEY, seedMeetingList);
   writeJson(CONFIRMATIONS_KEY, []);
-  localStorage.setItem(SEEDED_KEY, "true");
+  try {
+    localStorage.setItem(SEEDED_KEY, "true");
+  } catch {
+    return;
+  }
 }

@@ -199,8 +199,8 @@ export function YearPlan({ conferences, year }: YearPlanProps) {
                 </h3>
                 <span className="flex items-center gap-1.5">
                   {isThin ? (
-                    <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800">
-                      Thin
+                    <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                      No strong events
                     </span>
                   ) : null}
                   <span className="text-xs text-neutral-600">
@@ -244,8 +244,8 @@ export function YearPlan({ conferences, year }: YearPlanProps) {
 
         {emptyMonthNames.length > 0 ? (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800">
-              Thin
+            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+              No strong events
             </span>
             {emptyMonthNames.map((monthName) => (
               <span

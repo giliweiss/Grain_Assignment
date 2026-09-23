@@ -33,33 +33,50 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid request JSON." }, { status: 400 });
   }
 
+  if (typeof body.personName !== "string" || !Array.isArray(body.meetings)) {
+    return Response.json({ error: "Invalid request JSON." }, { status: 400 });
+  }
+
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     return Response.json({ configured: false });
   }
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-  const meetingLines = (body.meetings ?? [])
+  const meetings = body.meetings;
+  const meetingLines = meetings
     .map((meeting) => {
+      if (!meeting || typeof meeting !== "object") return "";
       const interestLabel =
         meeting.interest === "not_now"
           ? "Not now"
           : meeting.interest === "interested"
             ? "Interested"
             : "Interest not recorded";
-      return `- ${meeting.date} at ${meeting.conferenceName} (${meeting.company}), ${interestLabel}: ${meeting.note}`;
+      const date = typeof meeting.date === "string" ? meeting.date.slice(0, 40) : "";
+      const conferenceName =
+        typeof meeting.conferenceName === "string" ? meeting.conferenceName.slice(0, 200) : "";
+      const company = typeof meeting.company === "string" ? meeting.company.slice(0, 200) : "";
+      const note = typeof meeting.note === "string" ? meeting.note.slice(0, 1000) : "";
+      return `- ${date} at ${conferenceName} (${company}), ${interestLabel}: ${note}`;
     })
+    .filter(Boolean)
     .join("\n");
 
   const systemPrompt = `You help Grain sales reps. Grain sells embedded cross-currency / FX risk tools to PSPs, travel wholesalers, cross-border payments, and treasury teams.
 Given meeting notes for one person, say how the relationship actually changed, and one next action.
-Be conservative and evidence-based. Do not infer progress, warming, or buying intent unless a note contains a concrete buying signal: a pricing question, a demo request, an introduction to an internal stakeholder, a timeline, a named owner, or an agreed next step.
-Repeated vague requests such as "send info", "circle back", or "send more info" are not progress. Repeated "Not now" together with only those vague notes means the relationship is stalled, with no meaningful progression. Say that plainly. Do not describe it as warming or moving forward.
+Be conservative and evidence-based. Do not infer progress, warming, buying intent, or a stakeholder unless a note contains a concrete buying signal: a pricing question, a demo request, an introduction to an internal stakeholder, a timeline, a named owner, or an agreed next step.
+Repeated vague requests such as "send info", "circle back", or "send more info" are not progress, even if the rep marked Interested. Repeated "Not now" together with only those vague notes means the relationship is stalled, with no meaningful progression. Say stalled plainly. Do not describe it as warming, interested, or moving forward.
+If the notes are too thin to judge (blank, a greeting, or "met briefly" with no buying signal), say there is not enough information. Do not invent intent.
+If an earlier concrete signal is followed by "Not now" and only a vague request, call that cooling or contradictory. Do not treat the earlier signal as continued progress.
 A warming relationship requires those concrete signals, and the notes getting more specific across meetings.
-If the notes never advance, the next action is a direct ask or stop. Do not invent a stakeholder, commitment, or next meeting that is not in the notes.
+Next action rules:
+- Warming: nextAction only carries out the concrete signal already written in the notes. Do not add a new question, owner, or meeting that the notes do not contain.
+- Stalled, insufficient, contradictory, or cooling: nextAction is exactly one direct qualification question (a yes/no on a concrete need, owner, or timeline), then the words "If there is still no concrete intent, deprioritize and pause." Do not suggest sending more info, booking a demo, or another meeting.
 Respond with JSON only: {"whatChanged":"...","nextAction":"..."}. Keep the combined text about 80 words.`;
 
-  const userPrompt = `Person: ${body.personName}\nMeetings:\n${meetingLines}`;
+  const personName = body.personName.slice(0, 200);
+  const userPrompt = `Person: ${personName}\nMeetings:\n${meetingLines}`;
 
   try {
     const openAiResponse = await fetch(

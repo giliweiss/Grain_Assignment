@@ -4,4 +4,17 @@ body {
   background: #f7f7f5;
   color: #171717;
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overflow-wrap: break-word;
+}
+
+button:not(:disabled),
+a[href],
+select,
+summary,
+label:has(> input[type="radio"]) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
