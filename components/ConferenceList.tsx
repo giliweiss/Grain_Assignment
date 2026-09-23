@@ -92,7 +92,7 @@ export function ConferenceList({ conferences }: ConferenceListProps) {
     <div>
       <ConferenceFilters filters={filters} onChange={setFilters} />
 
-      <p className="mt-2 text-xs text-neutral-400">
+      <p className="mt-2 text-xs text-neutral-600">
         {visibleConferences.length} of {conferences.length}
       </p>
 
@@ -115,7 +115,7 @@ export function ConferenceList({ conferences }: ConferenceListProps) {
                 <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   {tier}
                 </h2>
-                <span className="text-xs text-neutral-400">
+                <span className="text-xs text-neutral-600">
                   {tierConferences.length}
                 </span>
               </div>
@@ -142,7 +142,7 @@ export function ConferenceList({ conferences }: ConferenceListProps) {
                         {" · "}
                         {conference.city}, {conference.country}
                       </p>
-                      <p className="mt-1 text-xs text-neutral-400">
+                      <p className="mt-1 text-xs text-neutral-600">
                         <span className="capitalize">{conference.vertical}</span>
                         {" · "}
                         {conference.audienceSize.toLocaleString("en-US")} people

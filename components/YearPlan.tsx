@@ -203,7 +203,7 @@ export function YearPlan({ conferences, year }: YearPlanProps) {
                       Thin
                     </span>
                   ) : null}
-                  <span className="text-xs text-neutral-400">
+                  <span className="text-xs text-neutral-600">
                     {monthConferences.length}
                   </span>
                 </span>

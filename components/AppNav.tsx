@@ -22,6 +22,7 @@ export function AppNav() {
             <Link
               key={link.href}
               href={link.href}
+              aria-current={active ? "page" : undefined}
               className={
                 active
                   ? "rounded-md bg-neutral-900 px-3 py-2 text-sm text-white"

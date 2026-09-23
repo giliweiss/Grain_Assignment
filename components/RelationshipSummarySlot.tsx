@@ -10,7 +10,8 @@ type RelationshipSummarySlotProps = {
 };
 
 type SummaryResponse = {
-  configured: boolean;
+  configured?: boolean;
+  error?: string;
   whatChanged?: string;
   nextAction?: string;
 };
@@ -47,12 +48,14 @@ export function RelationshipSummarySlot({
         }),
       });
 
-      if (!response.ok) {
-        setErrorMessage("Could not generate a relationship summary.");
+      const data = (await response.json()) as SummaryResponse;
+      if (!response.ok || data.error) {
+        setErrorMessage(
+          data.error ?? "Could not generate a relationship summary.",
+        );
         return;
       }
 
-      const data = (await response.json()) as SummaryResponse;
       setSummary(data);
     } catch {
       setErrorMessage("Could not generate a relationship summary.");
@@ -82,7 +85,10 @@ export function RelationshipSummarySlot({
         </p>
       ) : null}
 
-      {summary && summary.configured ? (
+      {summary &&
+      summary.configured &&
+      summary.whatChanged &&
+      summary.nextAction ? (
         <div className="mt-2 max-w-md space-y-1 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-2 text-xs leading-snug text-neutral-700">
           <p>
             <span className="font-medium text-neutral-800">Changed:</span>{" "}

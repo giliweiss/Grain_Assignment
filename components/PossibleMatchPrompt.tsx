@@ -2,8 +2,18 @@
 
 import type { PossibleMatch } from "@/lib/types";
 
+export type PossibleMatchGroup = {
+  key: string;
+  companies: string[];
+  conferenceNames: string[];
+};
+
+export type PossibleMatchView = PossibleMatch & {
+  groups: PossibleMatchGroup[];
+};
+
 type PossibleMatchPromptProps = {
-  possibleMatches: PossibleMatch[];
+  possibleMatches: PossibleMatchView[];
   onConfirmSamePerson: (normalizedName: string) => void;
   onConfirmDifferentPeople: (normalizedName: string) => void;
 };
@@ -33,10 +43,15 @@ export function PossibleMatchPrompt({
                 <p className="font-semibold capitalize text-neutral-900">
                   {possibleMatch.normalizedName}
                 </p>
-                <p className="text-xs text-neutral-600">
-                  {possibleMatch.groupKeys.length} groups · same name, different
-                  company
-                </p>
+                <ul className="mt-1 space-y-0.5">
+                  {possibleMatch.groups.map((group) => (
+                    <li key={group.key} className="text-xs text-neutral-700">
+                      {group.companies.join(", ")}
+                      {" · "}
+                      {group.conferenceNames.join(", ")}
+                    </li>
+                  ))}
+                </ul>
               </div>
               <div className="flex shrink-0 flex-wrap gap-1.5">
                 <button

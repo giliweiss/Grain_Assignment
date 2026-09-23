@@ -11,13 +11,32 @@ type RequestBody = {
   meetings: MeetingNote[];
 };
 
+function providerError() {
+  return Response.json(
+    {
+      configured: true,
+      error: "The summary service could not complete this request.",
+    },
+    { status: 502 },
+  );
+}
+
 export async function POST(request: Request) {
-  const apiKey = process.env.OPENAI_API_KEY;
+  let body: RequestBody;
+  try {
+    body = (await request.json()) as RequestBody;
+  } catch {
+    return Response.json({ error: "Invalid request JSON." }, { status: 400 });
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return Response.json({ error: "Invalid request JSON." }, { status: 400 });
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     return Response.json({ configured: false });
   }
-
-  const body = (await request.json()) as RequestBody;
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
   const meetingLines = (body.meetings ?? [])
@@ -63,35 +82,28 @@ Respond with JSON only: {"whatChanged":"...","nextAction":"..."}. Keep the combi
     );
 
     if (!openAiResponse.ok) {
-      const errorText = await openAiResponse.text();
-      return Response.json({
-        configured: true,
-        whatChanged: "Could not generate a summary.",
-        nextAction: `OpenAI request failed (${openAiResponse.status}): ${errorText.slice(0, 200)}`,
-      });
+      return providerError();
     }
 
     const openAiData = (await openAiResponse.json()) as {
       choices?: { message?: { content?: string } }[];
     };
-    const content = openAiData.choices?.[0]?.message?.content ?? "{}";
+    const content = openAiData.choices?.[0]?.message?.content ?? "";
     const parsed = JSON.parse(content) as {
       whatChanged?: string;
       nextAction?: string;
     };
 
+    if (!parsed.whatChanged?.trim() || !parsed.nextAction?.trim()) {
+      return providerError();
+    }
+
     return Response.json({
       configured: true,
-      whatChanged: parsed.whatChanged ?? "",
-      nextAction: parsed.nextAction ?? "",
+      whatChanged: parsed.whatChanged,
+      nextAction: parsed.nextAction,
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown OpenAI request error";
-    return Response.json({
-      configured: true,
-      whatChanged: "Could not generate a summary.",
-      nextAction: `OpenAI request failed: ${message}`,
-    });
+  } catch {
+    return providerError();
   }
 }

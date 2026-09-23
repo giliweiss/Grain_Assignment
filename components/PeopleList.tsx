@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getConferenceById } from "@/lib/conferences";
+import { normalizeText } from "@/lib/matching";
 import { getMeetings, saveMeetings } from "@/lib/storage";
 import type { PersonGroup } from "@/lib/types";
 import { HubSpotSlot } from "./HubSpotSlot";
@@ -9,18 +10,34 @@ import { RelationshipSummarySlot } from "./RelationshipSummarySlot";
 
 type PeopleListProps = {
   people: PersonGroup[];
+  confirmedNames: string[];
 };
 
 function formatCapturedDate(capturedAt: string): string {
-  return new Date(capturedAt).toLocaleDateString("en-GB", {
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(capturedAt);
+  const date = dateOnly
+    ? new Date(
+        Number(dateOnly[1]),
+        Number(dateOnly[2]) - 1,
+        Number(dateOnly[3]),
+      )
+    : new Date(capturedAt);
+
+  return date.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
 }
 
-function matchLevelLabel(matchLevel: PersonGroup["matchLevel"]): string {
+function matchLevelLabel(
+  matchLevel: PersonGroup["matchLevel"],
+  confirmedSamePerson: boolean,
+): string {
   if (matchLevel === "exact") return "Exact match";
+  if (matchLevel === "likely" && confirmedSamePerson) {
+    return "Confirmed same person";
+  }
   if (matchLevel === "likely") return "Likely match";
   return "Single meeting";
 }
@@ -89,7 +106,7 @@ function interestBadgeClassName(interest: string): string {
   return "bg-neutral-100 text-neutral-600";
 }
 
-export function PeopleList({ people }: PeopleListProps) {
+export function PeopleList({ people, confirmedNames }: PeopleListProps) {
   const [peopleGroups, setPeopleGroups] = useState(people);
   const [addingNoteForMeetingId, setAddingNoteForMeetingId] = useState<
     string | null
@@ -182,6 +199,9 @@ export function PeopleList({ people }: PeopleListProps) {
           const isEditingEmail = editingEmailForGroupKey === personGroup.key;
           const headerCompany = currentCompany(personGroup);
           const meetingCount = personGroup.meetings.length;
+          const confirmedSamePerson = confirmedNames.includes(
+            normalizeText(personName),
+          );
 
           return (
             <li
@@ -194,7 +214,7 @@ export function PeopleList({ people }: PeopleListProps) {
                     <h3 className="text-base font-semibold text-neutral-900">
                       {personName}
                     </h3>
-                    <span className="text-xs text-neutral-400">
+                    <span className="text-xs text-neutral-600">
                       {meetingCount} {meetingCount === 1 ? "meeting" : "meetings"}
                     </span>
                   </div>
@@ -253,7 +273,7 @@ export function PeopleList({ people }: PeopleListProps) {
                 </div>
 
                 <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-medium text-neutral-500">
-                  {matchLevelLabel(personGroup.matchLevel)}
+                  {matchLevelLabel(personGroup.matchLevel, confirmedSamePerson)}
                 </span>
               </div>
 

@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { PeopleList } from "@/components/PeopleList";
-import { PossibleMatchPrompt } from "@/components/PossibleMatchPrompt";
+import {
+  PossibleMatchPrompt,
+  type PossibleMatchView,
+} from "@/components/PossibleMatchPrompt";
+import { getConferenceById } from "@/lib/conferences";
 import { groupMeetings } from "@/lib/matching";
 import {
   getConfirmations,
@@ -10,17 +14,52 @@ import {
   resetDemoData,
   setConfirmation,
 } from "@/lib/storage";
-import type { GroupedMeetings } from "@/lib/types";
+import type { GroupedMeetings, PersonGroup } from "@/lib/types";
 
 function loadGroupedMeetings(): GroupedMeetings {
   return groupMeetings(getMeetings(), getConfirmations());
 }
 
+function confirmedSamePersonNames(): string[] {
+  return getConfirmations()
+    .filter((confirmation) => confirmation.decision === "same_person")
+    .map((confirmation) => confirmation.normalizedName);
+}
+
+function possibleMatchViews(grouped: GroupedMeetings): PossibleMatchView[] {
+  return grouped.possibleMatches.map((possibleMatch) => ({
+    ...possibleMatch,
+    groups: possibleMatch.groupKeys.flatMap((groupKey) => {
+      const personGroup = grouped.people.find(
+        (person) => person.key === groupKey,
+      );
+      return personGroup ? [describePersonGroup(personGroup)] : [];
+    }),
+  }));
+}
+
+function describePersonGroup(personGroup: PersonGroup) {
+  const companies = [
+    ...new Set(personGroup.meetings.map((meeting) => meeting.company)),
+  ];
+  const conferenceNames = [
+    ...new Set(
+      personGroup.meetings.map(
+        (meeting) =>
+          getConferenceById(meeting.conferenceId)?.name ?? meeting.conferenceId,
+      ),
+    ),
+  ];
+  return { key: personGroup.key, companies, conferenceNames };
+}
+
 export default function PeoplePage() {
   const [grouped, setGrouped] = useState<GroupedMeetings | null>(null);
+  const [confirmedNames, setConfirmedNames] = useState<string[]>([]);
 
   function reload() {
     setGrouped(loadGroupedMeetings());
+    setConfirmedNames(confirmedSamePersonNames());
   }
 
   useEffect(() => {
@@ -63,11 +102,14 @@ export default function PeoplePage() {
       ) : (
         <>
           <PossibleMatchPrompt
-            possibleMatches={grouped.possibleMatches}
+            possibleMatches={possibleMatchViews(grouped)}
             onConfirmSamePerson={handleSamePerson}
             onConfirmDifferentPeople={handleDifferentPeople}
           />
-          <PeopleList people={grouped.people} />
+          <PeopleList
+            people={grouped.people}
+            confirmedNames={confirmedNames}
+          />
         </>
       )}
     </main>

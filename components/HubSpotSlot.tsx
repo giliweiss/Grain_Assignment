@@ -113,7 +113,10 @@ export function HubSpotSlot({ personName, meetings }: HubSpotSlotProps) {
       ) : null}
 
       {result?.sent ? (
-        <p className="mt-1.5 text-xs text-green-800">Sent to HubSpot.</p>
+        <p className="mt-1.5 text-xs text-green-800">
+          Contact created in HubSpot. The meeting note and conference history
+          stay in this app.
+        </p>
       ) : null}
 
       {result && !result.sent ? (

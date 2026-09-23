@@ -57,22 +57,27 @@ export async function POST(request: Request) {
       },
     );
 
-    if (!hubSpotResponse.ok) {
-      const errorText = await hubSpotResponse.text();
+    if (hubSpotResponse.status === 409) {
       return Response.json({
         sent: false,
-        reason: `HubSpot API error (${hubSpotResponse.status}): ${errorText.slice(0, 300)}`,
+        reason: "This email is already a HubSpot contact.",
+        payload,
+      });
+    }
+
+    if (!hubSpotResponse.ok) {
+      return Response.json({
+        sent: false,
+        reason: "HubSpot could not create this contact.",
         payload,
       });
     }
 
     return Response.json({ sent: true, payload });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown HubSpot request error";
+  } catch {
     return Response.json({
       sent: false,
-      reason: `HubSpot request failed: ${message}`,
+      reason: "HubSpot could not be reached.",
       payload,
     });
   }

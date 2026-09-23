@@ -10,7 +10,7 @@ export default function YearPlanPage() {
     <main className="mx-auto max-w-5xl px-4 py-6">
       <div className="flex items-baseline gap-2">
         <h1 className="text-2xl font-semibold text-neutral-900">Year Plan</h1>
-        <p className="text-sm text-neutral-400">{planYear}</p>
+        <p className="text-sm text-neutral-600">{planYear}</p>
       </div>
       <YearPlan conferences={conferences} year={planYear} />
     </main>
