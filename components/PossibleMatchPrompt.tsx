@@ -59,7 +59,7 @@ export function PossibleMatchPrompt({
                   onClick={() =>
                     onConfirmSamePerson(possibleMatch.normalizedName)
                   }
-                  className="rounded-md bg-neutral-900 px-2.5 py-1.5 text-sm font-medium text-white"
+                  className="rounded-md bg-neutral-900 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-neutral-700"
                 >
                   Same person
                 </button>
@@ -68,7 +68,7 @@ export function PossibleMatchPrompt({
                   onClick={() =>
                     onConfirmDifferentPeople(possibleMatch.normalizedName)
                   }
-                  className="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-sm font-medium text-neutral-900"
+                  className="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-sm font-medium text-neutral-900 hover:border-neutral-400"
                 >
                   Different people
                 </button>

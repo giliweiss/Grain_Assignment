@@ -40,6 +40,7 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
   const [savedMessage, setSavedMessage] = useState("");
   const [formError, setFormError] = useState("");
   const saveLocked = useRef(false);
+  const nameInput = useRef<HTMLInputElement>(null);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -92,19 +93,19 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
     setInterest("interested");
     setFormError("");
     setSavedMessage(`Saved ${trimmedName}. Ready for the next person.`);
+    nameInput.current?.focus();
     window.setTimeout(() => {
       saveLocked.current = false;
     }, 400);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3.5">
-      <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
+    <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4 pb-20 sm:pb-0">
+      <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
         <span>
           Conference <span className="font-normal text-neutral-600">Required</span>
         </span>
         <select
-          required
           value={conferenceId}
           onChange={(event) => setConferenceId(event.target.value)}
           className={fieldClassName}
@@ -120,86 +121,90 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
         </select>
       </label>
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        <span>
-          Name <span className="font-normal text-neutral-600">Required</span>
-        </span>
-        <input
-          required
-          type="text"
-          autoComplete="name"
-          maxLength={120}
-          value={personName}
-          onChange={(event) => setPersonName(event.target.value)}
-          className={fieldClassName}
-        />
-      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
+          <span>
+            Name <span className="font-normal text-neutral-600">Required</span>
+          </span>
+          <input
+            ref={nameInput}
+            type="text"
+            autoComplete="name"
+            maxLength={120}
+            value={personName}
+            onChange={(event) => setPersonName(event.target.value)}
+            className={fieldClassName}
+          />
+        </label>
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        <span>
-          Company <span className="font-normal text-neutral-600">Required</span>
-        </span>
-        <input
-          required
-          type="text"
-          autoComplete="organization"
-          maxLength={160}
-          value={company}
-          onChange={(event) => setCompany(event.target.value)}
-          className={fieldClassName}
-        />
-      </label>
+        <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
+          <span>
+            Company <span className="font-normal text-neutral-600">Required</span>
+          </span>
+          <input
+            type="text"
+            autoComplete="organization"
+            maxLength={160}
+            value={company}
+            onChange={(event) => setCompany(event.target.value)}
+            className={fieldClassName}
+          />
+        </label>
+      </div>
 
-      <p className="text-xs leading-snug text-neutral-600">
-        Email and a missing note can be added later on People.
-      </p>
-
-      <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        <span>
-          Email <span className="font-normal text-neutral-600">Optional</span>
-        </span>
-        <input
-          type="email"
-          autoComplete="email"
-          maxLength={254}
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className={fieldClassName}
-        />
-      </label>
-
-      <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        <span>
-          LinkedIn{" "}
-          <span className="font-normal text-neutral-600">Optional</span>
-        </span>
-        <input
-          type="text"
-          inputMode="url"
-          maxLength={300}
-          value={linkedinUrl}
-          onChange={(event) => setLinkedinUrl(event.target.value)}
-          className={fieldClassName}
-        />
-      </label>
-
-      <label className="flex flex-col gap-1 text-sm font-medium text-neutral-700">
-        <span>
-          Note <span className="font-normal text-neutral-600">Optional</span>
-        </span>
-        <textarea
-          rows={2}
-          maxLength={1000}
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          className={fieldClassName}
-        />
-      </label>
+      <details className="rounded-xl border border-neutral-200 bg-white p-3">
+        <summary className="text-sm font-medium text-neutral-900">
+          Add contact details or a note (optional)
+        </summary>
+        <div className="mt-3 flex flex-col gap-4">
+          <p className="text-sm text-neutral-600">
+            You can add missing details later from People.
+          </p>
+          <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
+            <span>
+              Email <span className="font-normal text-neutral-600">Optional</span>
+            </span>
+            <input
+              type="email"
+              autoComplete="email"
+              maxLength={254}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className={fieldClassName}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
+            <span>
+              LinkedIn <span className="font-normal text-neutral-600">Optional</span>
+            </span>
+            <input
+              type="text"
+              inputMode="url"
+              maxLength={300}
+              value={linkedinUrl}
+              onChange={(event) => setLinkedinUrl(event.target.value)}
+              className={fieldClassName}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
+            <span>
+              Note <span className="font-normal text-neutral-600">Optional</span>
+            </span>
+            <textarea
+              rows={2}
+              maxLength={1000}
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              className={fieldClassName}
+            />
+          </label>
+        </div>
+      </details>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium text-neutral-700">Interest</legend>
-        <div className="flex flex-col gap-2">
-          <label className="flex items-center gap-3 text-base text-neutral-900">
+        <legend className="text-xs font-medium text-neutral-500">Interest</legend>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex items-center gap-2 text-base text-neutral-900">
             <input
               type="radio"
               name="interest"
@@ -210,7 +215,7 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
             />
             Interested
           </label>
-          <label className="flex items-center gap-3 text-base text-neutral-900">
+          <label className="flex items-center gap-2 text-base text-neutral-900">
             <input
               type="radio"
               name="interest"
@@ -224,12 +229,14 @@ export function FloorForm({ initialConferenceId }: FloorFormProps) {
         </div>
       </fieldset>
 
-      <button
-        type="submit"
-        className="mt-1 w-full rounded-md bg-neutral-900 px-4 py-3.5 text-base font-semibold text-white"
-      >
-        Save meeting
-      </button>
+      <div className="fixed inset-x-0 bottom-0 border-t border-neutral-200 bg-[#f7f7f5] px-4 py-3 sm:static sm:border-0 sm:bg-transparent sm:p-0">
+        <button
+          type="submit"
+          className="w-full rounded-md bg-neutral-900 px-4 py-3.5 text-base font-semibold text-white hover:bg-neutral-700"
+        >
+          Save lead
+        </button>
+      </div>
 
       {formError ? (
         <p className="text-center text-sm font-medium text-red-700" role="alert">

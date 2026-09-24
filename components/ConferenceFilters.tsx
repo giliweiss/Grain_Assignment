@@ -128,7 +128,7 @@ export function ConferenceFilters({ filters, onChange }: ConferenceFiltersProps)
           <button
             type="button"
             onClick={() => onChange(emptyFilters)}
-            className="text-sm font-medium text-neutral-700 underline underline-offset-2"
+            className="text-sm font-medium text-neutral-600 underline underline-offset-2 hover:text-neutral-900"
           >
             Clear filters
           </button>

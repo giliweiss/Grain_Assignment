@@ -7,6 +7,15 @@ body {
   overflow-wrap: break-word;
 }
 
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid #171717;
+  outline-offset: 2px;
+}
+
 button:not(:disabled),
 a[href],
 select,
@@ -17,4 +26,5 @@ label:has(> input[type="radio"]) {
 
 button:disabled {
   cursor: not-allowed;
+  opacity: 0.6;
 }

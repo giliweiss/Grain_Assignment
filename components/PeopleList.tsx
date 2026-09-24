@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { getConferenceById } from "@/lib/conferences";
 import { normalizeText } from "@/lib/matching";
 import { getMeetings, saveMeetings } from "@/lib/storage";
@@ -134,6 +135,8 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
     string | null
   >(null);
   const [emailDraft, setEmailDraft] = useState("");
+  const [searchText, setSearchText] = useState("");
+  const [peopleFilter, setPeopleFilter] = useState("all");
 
   useEffect(() => {
     setPeopleGroups(people);
@@ -195,21 +198,93 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
     setEmailDraft("");
   }
 
+  const visiblePeople = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    return peopleGroups.filter((personGroup) => {
+      const emails = uniqueEmails(personGroup);
+      const latest = latestMeeting(personGroup);
+      if (peopleFilter === "interested" && latest?.interest !== "interested") {
+        return false;
+      }
+      if (peopleFilter === "not_now" && latest?.interest !== "not_now") {
+        return false;
+      }
+      if (peopleFilter === "missing_email" && emails.length > 0) {
+        return false;
+      }
+      if (!query) return true;
+      const names = uniqueNames(personGroup).join(" ");
+      const companies = uniqueCompanies(personGroup).join(" ");
+      const events = personGroup.meetings
+        .map(
+          (meeting) =>
+            getConferenceById(meeting.conferenceId)?.name ?? meeting.conferenceId,
+        )
+        .join(" ");
+      return `${names} ${companies} ${events}`.toLowerCase().includes(query);
+    });
+  }, [peopleGroups, peopleFilter, searchText]);
+
   if (peopleGroups.length === 0) {
     return (
-      <p className="mt-4 text-sm text-neutral-600">
-        No people yet. Capture a lead on the floor to get started.
-      </p>
+      <div className="mt-5 rounded-xl border border-dashed border-neutral-300 bg-white px-4 py-8 text-center">
+        <p className="text-sm text-neutral-700">
+          No contacts yet. Add the first person you meet at an event.
+        </p>
+        <Link
+          href="/floor"
+          className="mt-3 inline-block rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+        >
+          Capture a lead
+        </Link>
+      </div>
     );
   }
 
   return (
     <section className="mt-5">
-      <h2 className="text-sm font-medium uppercase tracking-wide text-neutral-500">
-        Contacts
-      </h2>
-      <ul className="mt-2 space-y-2">
-        {peopleGroups.map((personGroup) => {
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-neutral-900">Contacts</h2>
+          <p className="text-sm text-neutral-600">
+            {visiblePeople.length} of {peopleGroups.length} people
+          </p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <label className="sr-only" htmlFor="people-search">
+            Search
+          </label>
+          <input
+            id="people-search"
+            type="search"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            placeholder="Search name, company, event…"
+            className="w-full rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-sm sm:w-64"
+          />
+          <label className="sr-only" htmlFor="people-filter">
+            Filter
+          </label>
+          <select
+            id="people-filter"
+            value={peopleFilter}
+            onChange={(event) => setPeopleFilter(event.target.value)}
+            className="w-full rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-sm sm:w-40"
+          >
+            <option value="all">All people</option>
+            <option value="interested">Interested</option>
+            <option value="not_now">Not now</option>
+            <option value="missing_email">Missing email</option>
+          </select>
+        </div>
+      </div>
+      {visiblePeople.length === 0 ? (
+        <p className="mt-4 rounded-xl border border-dashed border-neutral-300 bg-white px-4 py-8 text-center text-sm text-neutral-700">
+          No people match these filters. Try another search or filter.
+        </p>
+      ) : null}
+      <ul className="mt-3 grid items-start gap-3 lg:grid-cols-2">
+        {visiblePeople.map((personGroup) => {
           const names = uniqueNames(personGroup);
           const personName = latestMeeting(personGroup)?.personName ?? names[0] ?? "Unknown";
           const companies = uniqueCompanies(personGroup);
@@ -225,7 +300,7 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
           return (
             <li
               key={personGroup.key}
-              className="rounded-md border border-neutral-200 bg-white px-3.5 py-3"
+              className="rounded-xl border border-neutral-200 bg-white p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
@@ -292,18 +367,18 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
                   ) : null}
                 </div>
 
-                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-medium text-neutral-500">
+                <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
                   {matchLevelLabel(personGroup.matchLevel, confirmedSamePerson)}
                 </span>
               </div>
 
               {personGroup.companyChanged ? (
                 <p className="mt-1 text-xs text-amber-700">
-                  Company text changed
+                  Met under different companies
                 </p>
               ) : null}
 
-              <ul className="mt-2.5 space-y-1.5 border-t border-neutral-100 pt-2.5">
+              <ul className="mt-3 border-t border-neutral-200 pt-3">
                 {personGroup.meetings.map((meeting) => {
                   const conference = getConferenceById(meeting.conferenceId);
                   const conferenceName =
@@ -316,7 +391,10 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
                       : "Not now";
 
                   return (
-                    <li key={meeting.id} className="text-sm text-neutral-700">
+                    <li
+                      key={meeting.id}
+                      className="border-l border-neutral-200 py-1.5 pl-3"
+                    >
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                         <span className="tabular-nums text-neutral-500">
                           {formatCapturedDate(meeting.capturedAt)}
@@ -378,7 +456,7 @@ export function PeopleList({ people, confirmedNames }: PeopleListProps) {
                 })}
               </ul>
 
-              <div className="mt-3 space-y-2 border-t border-neutral-100 pt-2.5">
+              <div className="mt-3 flex flex-wrap gap-2 border-t border-neutral-200 pt-3">
                 {personGroup.meetings.length >= 2 ? (
                   <RelationshipSummarySlot
                     personName={personName}

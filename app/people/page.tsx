@@ -86,12 +86,16 @@ export default function PeoplePage() {
   }
 
   function handleResetDemoData() {
+    const confirmed = window.confirm(
+      "Reset saved contacts and matches to the demo data?",
+    );
+    if (!confirmed) return;
     resetDemoData();
     reload();
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6">
+    <main className="mx-auto max-w-7xl px-4 py-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-2xl font-semibold text-neutral-900">People</h1>
         <button

@@ -98,34 +98,34 @@ export function HubSpotSlot({ personName, meetings }: HubSpotSlotProps) {
   }
 
   return (
-    <div className="min-w-0 max-w-full">
+    <div className="contents">
       <button
         type="button"
         onClick={sendToHubSpot}
         disabled={isLoading}
-        className="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-sm font-medium text-neutral-900 disabled:opacity-60"
+        className="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-sm font-medium text-neutral-900 hover:border-neutral-400 disabled:opacity-60"
       >
         {isLoading ? "Sending…" : "Send to HubSpot"}
       </button>
 
       {errorMessage ? (
-        <p className="mt-1.5 text-xs text-red-700">{errorMessage}</p>
+        <p className="basis-full text-xs text-red-700">{errorMessage}</p>
       ) : null}
 
       {result?.sent ? (
-        <p className="mt-1.5 text-xs text-green-800">
+        <p className="basis-full text-xs text-green-800">
           Contact created in HubSpot. The meeting note and conference history
           stay in this app.
         </p>
       ) : null}
 
       {result && !result.sent ? (
-        <div className="mt-1.5 max-w-md space-y-1 text-xs text-neutral-700">
+        <div className="basis-full max-w-md space-y-1 text-xs text-neutral-700">
           <p>
             <span className="font-medium text-neutral-800">Not sent:</span>{" "}
             {result.reason}
           </p>
-          <pre className="overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-1.5 text-[11px] leading-snug text-neutral-600">
+          <pre className="overflow-x-auto rounded bg-neutral-50 p-1.5 font-mono text-[11px] leading-snug text-neutral-600">
             {JSON.stringify(result.payload, null, 2)}
           </pre>
         </div>
